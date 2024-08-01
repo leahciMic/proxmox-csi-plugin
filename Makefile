@@ -1,13 +1,9 @@
 REGISTRY ?= ghcr.io
-USERNAME ?= leahcimic
+USERNAME = leahcimic
 OCIREPO ?= $(REGISTRY)/$(USERNAME)
 HELMREPO ?= $(REGISTRY)/$(USERNAME)/charts
 PLATFORM ?= linux/arm64,linux/amd64
 PUSH ?= false
-
-# lowercase username
-USERNAME_LC = $(echo $(USERNAME) | tr '[:upper:]' '[:lower:]')
-USERNAME = $(USERNAME_LC)
 
 SHA ?= $(shell git describe --match=none --always --abbrev=7 --dirty)
 TAG ?= $(shell git describe --tag --always --match v[0-9]\*)
