@@ -78,7 +78,7 @@ func replacePVTopology(
 	delete(newPV.ObjectMeta.Annotations, csi.DriverName+"/migrate-node")
 	newPV.Spec.ClaimRef = nil
 	newPV.Status = corev1.PersistentVolumeStatus{}
-	newPV.Spec.CSI.VolumeHandle = volume.NewVolume(vol.Region(), node, vol.Storage(), vol.Disk()).VolumeID()
+	newPV.Spec.CSI.VolumeHandle = volume.NewVolume(vol.Region(), node, vol.Storage(), vol.Disk(), volume.FormatSubvol).VolumeID()
 	newPV.Spec.NodeAffinity.Required = &corev1.NodeSelector{
 		NodeSelectorTerms: []corev1.NodeSelectorTerm{
 			{

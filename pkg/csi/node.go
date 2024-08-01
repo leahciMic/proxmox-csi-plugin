@@ -118,6 +118,7 @@ func (nodeService *NodeService) NodeStageVolume(_ context.Context, request *csi.
 
 	if blk := volumeCapability.GetBlock(); blk != nil {
 		klog.V(3).InfoS("NodeStageVolume: raw device, skipped", "device", devicePath)
+
 		return &csi.NodeStageVolumeResponse{}, nil
 	}
 
@@ -220,7 +221,7 @@ func (nodeService *NodeService) NodeStageVolume(_ context.Context, request *csi.
 // NodeUnstageVolume is called by the CO when a workload that was using the specified volume is being moved to a different node.
 //
 //nolint:dupl
-func (n *NodeService) NodeUnstageVolume(_ context.Context, request *csi.NodeUnstageVolumeRequest) (*csi.NodeUnstageVolumeResponse, error) {
+func (nodeService *NodeService) NodeUnstageVolume(_ context.Context, request *csi.NodeUnstageVolumeRequest) (*csi.NodeUnstageVolumeResponse, error) {
 	klog.V(4).InfoS("NodeUnstageVolume: called", "args", stripSecrets(*request))
 
 	stagingTargetPath := request.GetStagingTargetPath()
@@ -234,8 +235,8 @@ func (n *NodeService) NodeUnstageVolume(_ context.Context, request *csi.NodeUnst
 		return &csi.NodeUnstageVolumeResponse{}, nil
 	}
 
-	n.volumeLocks.Lock()
-	defer n.volumeLocks.Unlock()
+	nodeService.volumeLocks.Lock()
+	defer nodeService.volumeLocks.Unlock()
 
 	cmd := exec.New().Command("fstrim", "-v", stagingTargetPath)
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -244,12 +245,12 @@ func (n *NodeService) NodeUnstageVolume(_ context.Context, request *csi.NodeUnst
 		klog.V(4).InfoS("NodeUnstageVolume: fstrim", "output", string(out))
 	}
 
-	sourcePath, err := n.Mount.GetMountFs(stagingTargetPath)
+	sourcePath, err := nodeService.Mount.GetMountFs(stagingTargetPath)
 	if err != nil {
 		klog.ErrorS(err, "NodeUnstageVolume: failed to find mount file system", "path", stagingTargetPath)
 	}
 
-	if err = n.Mount.UnmountPath(stagingTargetPath); err != nil {
+	if err = nodeService.Mount.UnmountPath(stagingTargetPath); err != nil {
 		klog.ErrorS(err, "NodeUnstageVolume: failed to unmount targetPath", "path", stagingTargetPath)
 
 		return nil, status.Errorf(codes.Internal, "Unmount of targetPath %s failed with error %v", stagingTargetPath, err)
@@ -282,7 +283,7 @@ func (n *NodeService) NodeUnstageVolume(_ context.Context, request *csi.NodeUnst
 // NodePublishVolume mounts the volume on the node.
 //
 //nolint:dupl
-func (n *NodeService) NodePublishVolume(_ context.Context, request *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
+func (nodeService *NodeService) NodePublishVolume(_ context.Context, request *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
 	klog.V(4).InfoS("NodePublishVolume: called", "args", stripSecrets(*request))
 
 	stagingTargetPath := request.GetStagingTargetPath()
@@ -316,7 +317,7 @@ func (n *NodeService) NodePublishVolume(_ context.Context, request *csi.NodePubl
 		mountOptions = append(mountOptions, "rw")
 	}
 
-	m := n.Mount
+	m := nodeService.Mount
 
 	if blk := volumeCapability.GetBlock(); blk != nil {
 		podVolumePath := filepath.Dir(targetPath)
@@ -387,7 +388,7 @@ func (n *NodeService) NodePublishVolume(_ context.Context, request *csi.NodePubl
 // NodeUnpublishVolume unmount the volume from the target path
 //
 //nolint:dupl
-func (n *NodeService) NodeUnpublishVolume(_ context.Context, request *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
+func (nodeService *NodeService) NodeUnpublishVolume(_ context.Context, request *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
 	klog.V(4).InfoS("NodeUnpublishVolume: called", "args", stripSecrets(*request))
 
 	targetPath := request.GetTargetPath()
@@ -395,7 +396,7 @@ func (n *NodeService) NodeUnpublishVolume(_ context.Context, request *csi.NodeUn
 		return nil, status.Error(codes.InvalidArgument, "TargetPath must be provided")
 	}
 
-	err := n.Mount.UnmountPath(targetPath)
+	err := nodeService.Mount.UnmountPath(targetPath)
 	if err != nil {
 		klog.ErrorS(err, "NodeUnpublishVolume: error unmounting volume", "path", targetPath)
 
@@ -408,7 +409,7 @@ func (n *NodeService) NodeUnpublishVolume(_ context.Context, request *csi.NodeUn
 }
 
 // NodeGetVolumeStats get the volume stats
-func (n *NodeService) NodeGetVolumeStats(_ context.Context, request *csi.NodeGetVolumeStatsRequest) (*csi.NodeGetVolumeStatsResponse, error) {
+func (nodeService *NodeService) NodeGetVolumeStats(_ context.Context, request *csi.NodeGetVolumeStatsRequest) (*csi.NodeGetVolumeStatsResponse, error) {
 	klog.V(4).InfoS("NodeGetVolumeStats: called", "args", stripSecrets(*request))
 
 	volumePath := request.GetVolumePath()
@@ -425,7 +426,7 @@ func (n *NodeService) NodeGetVolumeStats(_ context.Context, request *csi.NodeGet
 		return nil, status.Errorf(codes.NotFound, "target: %s not found", volumePath)
 	}
 
-	stats, err := n.Mount.GetDeviceStats(volumePath)
+	stats, err := nodeService.Mount.GetDeviceStats(volumePath)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get stats by path: %s", err)
 	}
@@ -450,7 +451,7 @@ func (n *NodeService) NodeGetVolumeStats(_ context.Context, request *csi.NodeGet
 }
 
 // NodeExpandVolume expand the volume
-func (n *NodeService) NodeExpandVolume(_ context.Context, request *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse, error) {
+func (nodeService *NodeService) NodeExpandVolume(_ context.Context, request *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse, error) {
 	klog.V(4).InfoS("NodeExpandVolume: called", "args", stripSecrets(*request))
 
 	volumeID := request.GetVolumeId()
@@ -472,7 +473,7 @@ func (n *NodeService) NodeExpandVolume(_ context.Context, request *csi.NodeExpan
 		return &csi.NodeExpandVolumeResponse{}, nil
 	}
 
-	output, err := n.Mount.GetMountFs(volumePath)
+	output, err := nodeService.Mount.GetMountFs(volumePath)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("Failed to find mount file system %s: %v", volumePath, err))
 	}
@@ -506,7 +507,7 @@ func (n *NodeService) NodeExpandVolume(_ context.Context, request *csi.NodeExpan
 		}
 	}
 
-	r := mountutil.NewResizeFs(n.Mount.Mounter().Exec)
+	r := mountutil.NewResizeFs(nodeService.Mount.Mounter().Exec)
 	if _, err := r.Resize(devicePath, volumePath); err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not resize volume %q:  %v", volumeID, err)
 	}
@@ -515,7 +516,7 @@ func (n *NodeService) NodeExpandVolume(_ context.Context, request *csi.NodeExpan
 }
 
 // NodeGetCapabilities get the node capabilities
-func (n *NodeService) NodeGetCapabilities(_ context.Context, _ *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
+func (nodeService *NodeService) NodeGetCapabilities(_ context.Context, _ *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
 	klog.V(4).InfoS("NodeGetCapabilities: called")
 
 	caps := []*csi.NodeServiceCapability{}
@@ -535,26 +536,26 @@ func (n *NodeService) NodeGetCapabilities(_ context.Context, _ *csi.NodeGetCapab
 }
 
 // NodeGetInfo get the node info
-func (n *NodeService) NodeGetInfo(ctx context.Context, _ *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
+func (nodeService *NodeService) NodeGetInfo(ctx context.Context, _ *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
 	klog.V(4).InfoS("NodeGetInfo: called")
 
-	node, err := n.kclient.CoreV1().Nodes().Get(ctx, n.nodeID, metav1.GetOptions{})
+	node, err := nodeService.kclient.CoreV1().Nodes().Get(ctx, nodeService.nodeID, metav1.GetOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get node %s: %w", n.nodeID, err)
+		return nil, fmt.Errorf("failed to get node %s: %w", nodeService.nodeID, err)
 	}
 
 	region := node.Labels[corev1.LabelTopologyRegion]
 	if region == "" {
-		return nil, fmt.Errorf("failed to get region for node %s", n.nodeID)
+		return nil, fmt.Errorf("failed to get region for node %s", nodeService.nodeID)
 	}
 
 	zone := node.Labels[corev1.LabelTopologyZone]
 	if zone == "" {
-		return nil, fmt.Errorf("failed to get zone for node %s", n.nodeID)
+		return nil, fmt.Errorf("failed to get zone for node %s", nodeService.nodeID)
 	}
 
 	return &csi.NodeGetInfoResponse{
-		NodeId:            n.nodeID,
+		NodeId:            nodeService.nodeID,
 		MaxVolumesPerNode: MaxVolumesPerNode,
 		AccessibleTopology: &csi.Topology{
 			Segments: map[string]string{

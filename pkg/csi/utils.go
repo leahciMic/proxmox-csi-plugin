@@ -299,7 +299,6 @@ func detachVolume(cl *pxapi.Client, vmr *pxapi.VmRef, pvc string) error {
 
 	// need to save new config...
 	_, err = cl.SetLxcConfig(vmr, vmParams)
-
 	// TODO(leahciMic): How to remove lxc disk?
 	if err != nil {
 		return fmt.Errorf("failed to set vm config: %v, vmParams=%+v", err, vmParams)
@@ -334,7 +333,6 @@ func getDevicePath(deviceContext map[string]string) (string, error) {
 
 		return nil
 	})
-
 	if err != nil {
 		if retry.IsTimeout(err) {
 			return "", fmt.Errorf("device %s is not found", devicePath)

@@ -189,7 +189,7 @@ func (d *ControllerService) CreateVolume(_ context.Context, request *csi.CreateV
 	}
 
 	// TODO(leahciMic): You're here in the audit
-	vol := volume.NewVolume(region, zone, params[StorageIDKey], fmt.Sprintf("vm-%d-%s", vmID, pvc))
+	vol := volume.NewVolume(region, zone, params[StorageIDKey], fmt.Sprintf("vm-%d-%s", vmID, pvc), volume.FormatSubvol)
 	if storageConfig["path"] != nil && storageConfig["path"].(string) != "" {
 		vol = volume.NewVolume(region, zone, params[StorageIDKey], fmt.Sprintf("%d/subvol-%d-%s.raw", vmID, vmID, pvc), volume.FormatSubvol)
 	}
@@ -309,7 +309,7 @@ func (d *ControllerService) ControllerGetCapabilities(_ context.Context, _ *csi.
 func (d *ControllerService) ControllerPublishVolume(ctx context.Context, request *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
 	klog.V(4).InfoS("ControllerPublishVolume: called", "args", protosanitizer.StripSecrets(*request))
 
-	if blk := request.VolumeCapability.GetBlock(); blk != nil {
+	if blk := request.GetVolumeCapability().GetBlock(); blk != nil {
 		return nil, status.Error(codes.Unimplemented, "Block volume is not supported")
 	}
 
@@ -363,7 +363,7 @@ func (d *ControllerService) ControllerPublishVolume(ctx context.Context, request
 	}
 
 	if vol.Zone() == "" {
-		vol = volume.NewVolume(vol.Region(), vmr.Node(), vol.Storage(), vol.Disk())
+		vol = volume.NewVolume(vol.Region(), vmr.Node(), vol.Storage(), vol.Disk(), volume.FormatSubvol)
 	}
 
 	options := map[string]string{
