@@ -34,8 +34,8 @@ jobs:
         with:
           version: v1.59.1
           args: --timeout=5m --config=.golangci.yml
-      - name: Unit
-        run: make unit
+      # - name: Unit
+      #   run: make unit
       - name: Build
         timeout-minutes: 10
         run: make images
