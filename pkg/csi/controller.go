@@ -640,6 +640,7 @@ func (d *ControllerService) ControllerExpandVolume(_ context.Context, request *c
 			}
 
 			device := deviceNamePrefix + strconv.Itoa(lun)
+			// TODO(leahciMic): ResizeQemuDiskRaw is not going to be correct
 			if _, err := cl.ResizeQemuDiskRaw(vmr, device, fmt.Sprintf("%dG", volSizeGB)); err != nil {
 				klog.ErrorS(err, "ControllerExpandVolume: failed to resize vm disk", "cluster", vol.Cluster(), "volumeID", vol.VolumeID(), "vmID", vmr.VmId())
 
