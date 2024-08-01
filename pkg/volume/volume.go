@@ -22,21 +22,35 @@ import (
 	"strings"
 )
 
+// Format of the volume
+type Format string
+
+const (
+	// FormatRaw raw format
+	FormatRaw Format = "raw"
+	// FormatQCOW2 qcow2 format
+	FormatQCOW2 Format = "qcow2"
+	// FormatSubvol subvol format
+	FormatSubvol Format = "subvol"
+)
+
 // Volume is the volume ID type.
 type Volume struct {
 	region  string
 	zone    string
 	storage string
 	disk    string
+	format  Format
 }
 
 // NewVolume creates a new volume ID.
-func NewVolume(region, zone, storage, disk string) *Volume {
+func NewVolume(region, zone, storage, disk string, format Format) *Volume {
 	return &Volume{
 		region:  region,
 		zone:    zone,
 		storage: storage,
 		disk:    disk,
+		format:  format,
 	}
 }
 
