@@ -206,7 +206,7 @@ func (d *ControllerService) CreateVolume(_ context.Context, request *csi.CreateV
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		klog.InfoS("createVolume", "volume", vol, "size", volSizeGB)
+		klog.InfoS("leahciMic createVolume", "volume", vol, "size", volSizeGB)
 
 		err = createVolume(cl, vol, volSizeGB)
 		if err != nil {
