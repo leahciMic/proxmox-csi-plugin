@@ -206,7 +206,16 @@ func (d *ControllerService) CreateVolume(_ context.Context, request *csi.CreateV
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		klog.V(4).InfoS("leahciMic createVolume", "volume", vol, "size", volSizeGB)
+		klog.V(4).InfoS("leahciMic createVolume",
+			"disk", vol.Disk(),
+			"size", volSizeGB,
+			"storage", vol.Storage(),
+			"volumeID", vol.VolumeID(),
+			"volumeSharedID", vol.VolumeSharedID(),
+			"zone", vol.Zone(),
+			"region", vol.Region(),
+			"format", vol.Format(),
+		)
 
 		err = createVolume(cl, vol, volSizeGB)
 		if err != nil {

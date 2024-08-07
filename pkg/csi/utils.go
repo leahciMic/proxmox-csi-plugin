@@ -213,6 +213,7 @@ func createVolume(cl *pxapi.Client, vol *volume.Volume, sizeGB int) error {
 		"vmid":     vmID,
 		"filename": filename[len(filename)-1],
 		"size":     fmt.Sprintf("%dG", sizeGB),
+		"format":   vol.Format(),
 	}
 
 	err := cl.CreateVMDisk(vol.Node(), vol.Storage(), fmt.Sprintf("%s:%s", vol.Storage(), vol.Disk()), diskParams)

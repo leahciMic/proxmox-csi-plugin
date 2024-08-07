@@ -112,3 +112,8 @@ func (v *Volume) Cluster() string {
 func (v *Volume) Node() string {
 	return v.zone
 }
+
+// Format function returns the format of the volume.
+func (v *Volume) Format() Format {
+	return v.format
+}
