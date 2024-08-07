@@ -192,7 +192,7 @@ func (d *ControllerService) CreateVolume(_ context.Context, request *csi.CreateV
 
 	// TODO(leahciMic): You're here in the audit
 	klog.InfoS("CreateVolume", "storageConfig", storageConfig)
-	vol := volume.NewVolume(region, zone, params[StorageIDKey], fmt.Sprintf("vm-%d-%s", vmID, pvc), volume.FormatSubvol)
+	vol := volume.NewVolume(region, zone, params[StorageIDKey], fmt.Sprintf("subvol-%d-%s", vmID, pvc), volume.FormatSubvol)
 	if storageConfig["path"] != nil && storageConfig["path"].(string) != "" {
 		vol = volume.NewVolume(region, zone, params[StorageIDKey], fmt.Sprintf("%d/subvol-%d-%s.raw", vmID, vmID, pvc), volume.FormatSubvol)
 	}
@@ -205,6 +205,8 @@ func (d *ControllerService) CreateVolume(_ context.Context, request *csi.CreateV
 
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+
+		klog.InfoS("createVolume", "volume", vol, "size", volSizeGB)
 
 		err = createVolume(cl, vol, volSizeGB)
 		if err != nil {
