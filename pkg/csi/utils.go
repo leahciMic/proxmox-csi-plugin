@@ -26,6 +26,7 @@ import (
 
 	pxapi "github.com/Telmate/proxmox-api-go/proxmox"
 	"github.com/siderolabs/go-retry/retry"
+	"k8s.io/klog/v2"
 
 	volume "github.com/leahcimic/proxmox-csi-plugin/pkg/volume"
 )
@@ -257,6 +258,7 @@ func attachVolume(cl *pxapi.Client, vmr *pxapi.VmRef, storageName string, pvc st
 				}
 
 				// mediavault:subvol-101-disk-2,mp=/mnt/media,size=35000G
+				klog.V(4).InfoS("leahcimic", "vmParams", vmParams)
 
 				_, err = cl.SetLxcConfig(vmr, vmParams)
 				if err != nil {
